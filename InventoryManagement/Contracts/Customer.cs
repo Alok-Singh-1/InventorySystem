@@ -13,7 +13,7 @@ namespace InventoryManagement.Contracts
 
         public string? email { get; set; } = string.Empty;
 
-        public string contactNumber { get; set; } = string.Empty;
+        public string? contactNumber { get; set; } = string.Empty;
         /*public int? id { get; set; }
         public string firstName { get; set; } = string.Empty;
 
