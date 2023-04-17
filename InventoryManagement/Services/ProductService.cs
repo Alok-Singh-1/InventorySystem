@@ -46,7 +46,12 @@ namespace InventoryManagement.Services
         {
             var serviceResponse = new ServiceResponse<Product>();
             var product = await _context.Products.FirstOrDefaultAsync(x => x.id == id);//            var api = _someApi.Find(x => x.id == id);
-            if (product == null) throw new Exception("Id not valid"); //null doesn't work in this case
+            if (product == null)
+            {
+                serviceResponse.Message = "Product Not Found"; //null doesn't work in this case
+                serviceResponse.Success = false;
+                return serviceResponse;
+            }
             serviceResponse.Data = _mapper.Map<Contracts.Product>(product);
             return serviceResponse;
         }
@@ -70,7 +75,6 @@ namespace InventoryManagement.Services
 
         public async Task<ServiceResponse<Product>> Update(Product request)
         {
-
             var serviceResponse = new ServiceResponse<Product>();
 
             try
@@ -80,7 +84,7 @@ namespace InventoryManagement.Services
                     throw new Exception($"Product with ID'{request.id}' not found.");
                 product.productName = request.productName;
                 product.productQuantity = request.productQuantity;
-                product.purchasePrice = request.purchasePrice;
+                product.sellingPrice = request.sellingPrice;
                 product.description = request.description;
                 product.productCategory = request.productCategory;
 

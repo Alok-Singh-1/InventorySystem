@@ -46,7 +46,7 @@ namespace InventoryManagement.Services
         {
             var serviceResponse = new ServiceResponse<Customer>();
             var customer = await _context.Customers.FirstOrDefaultAsync(x => x.id == id);//            var api = _someApi.Find(x => x.id == id);
-            if (customer == null) throw new Exception("Id not valid"); //null doesn't work in this case
+            if (customer == null) throw new Exception("Customer id not valid"); //null doesn't work in this case
             serviceResponse.Data = _mapper.Map<Contracts.Customer>(customer);
             return serviceResponse;
         }

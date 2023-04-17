@@ -14,6 +14,8 @@ namespace InventoryManagement.Common.Mapping
             CreateMap<EntityFrameworkCore.Customer, Contracts.Customer>();
             CreateMap<Contracts.Product, EntityFrameworkCore.Product>(); //needed as of now 
             CreateMap<EntityFrameworkCore.Product, Contracts.Product>();
+            CreateMap<EntityFrameworkCore.Order, Contracts.OrderResponse>();
+            CreateMap<Contracts.OrderResponse, EntityFrameworkCore.Order>();
         }
 
     }

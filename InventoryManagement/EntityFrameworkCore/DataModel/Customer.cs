@@ -1,9 +1,11 @@
 ﻿//using System.ComponentModel.DataAnnotations.Schema;
+
+using System.ComponentModel.DataAnnotations.Schema;
 using InventoryManagement.Common;
 
 namespace InventoryManagement.EntityFrameworkCore
 {
-   // [Table("Customer")]
+    [Table("Customer")]
     public class Customer
     {
             public int id { get; set; }
@@ -17,7 +19,8 @@ namespace InventoryManagement.EntityFrameworkCore
 
             public string contactNumber { get; set; } = string.Empty;
 
-            //  public PaymentMethod paymentType { get; set; } = PaymentMethod.COD;
+            public PaymentMethod paymentType { get; set; } = PaymentMethod.COD;
+
 
     }
 }

@@ -11,7 +11,7 @@
 
             public int productQuantity { get; set; }
 
-            public int purchasePrice { get; set; }
+            public int sellingPrice { get; set; }
 
     }
 }
