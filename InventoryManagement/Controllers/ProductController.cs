@@ -1,4 +1,5 @@
 ﻿using InventoryManagement.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Product = InventoryManagement.Contracts.Product;
 
@@ -29,7 +30,7 @@ namespace SomeAPI.Controllers
             return Ok(products);
         }
 
-        [HttpPost]
+        [HttpPost, Authorize(Roles="Admin")]
         public async Task<ActionResult<ServiceResponse<List<Product>>>> Create(List<Product> Items)
         {
             var products = await _productService.Create(Items);
