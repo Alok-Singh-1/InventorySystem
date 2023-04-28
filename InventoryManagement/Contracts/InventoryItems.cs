@@ -4,6 +4,7 @@
     {
         public int? id { get; set; }
         public string productName { get; set; } = string.Empty;
+        public string productId { get; set; } = string.Empty;
 
         public string? purchasePrice { get; set; } = string.Empty;
 

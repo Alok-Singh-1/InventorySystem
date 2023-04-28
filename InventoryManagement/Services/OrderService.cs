@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OrderResponse = InventoryManagement.Contracts.OrderResponse;
 using OrderRequest = InventoryManagement.Contracts.OrderRequest;
+using InventoryManagement.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using InventoryManagement.Contracts;
+
 namespace InventoryManagement.Services
 {
     public class OrderService : IOrderService
@@ -36,49 +40,64 @@ namespace InventoryManagement.Services
             serviceResponse.Data = _mapper.Map<Contracts.OrderResponse>(order);
             return serviceResponse;
         }
-        public async Task<ServiceResponse<List<OrderResponse>>> Create(List<OrderRequest> Orders)
+        public async Task<ServiceResponse<OrderResponse>> Create(OrderRequest Order)
         {
-            var serviceResponse = new ServiceResponse<List<OrderResponse>>();
+            var serviceResponse = new ServiceResponse<OrderResponse>();
             var entityOrder = new EntityFrameworkCore.Order();
             var listDbOrder = new List<EntityFrameworkCore.Order>();
 
-            foreach (var order in Orders)
+            if (Order.Customer.id == null && (Order.Customer.firstName.IsNullOrEmpty() || Order.Customer.contactNumber.IsNullOrEmpty() || Order.Customer.address.IsNullOrEmpty())) ////If neither an existing customer id nor details of a new customer are provided then an error is thrown
             {
+                serviceResponse.Success = false;
+                serviceResponse.Message = "Please provide either an existing customer Id or the details of a new customer i.e. FirstName, Contact and Address";
+                return serviceResponse;
+            }
 
-                if (order.customerId == null && (order.Customer == null || order.Customer?.Count == 0)) //fault scenario return if goes inside this
-                {
-                    serviceResponse.Success = false;
-                    serviceResponse.Message = "Please provide either an existing customer Id or the details of a new customer";
-                    return serviceResponse;
-                }
+            if (Order.Customer.id != null && (!Order.Customer.firstName.IsNullOrEmpty() || !Order.Customer.contactNumber.IsNullOrEmpty() || !Order.Customer.address.IsNullOrEmpty())) //If both existing customer id and details of a new customer are provided then an error is thrown
+            {
+                serviceResponse.Success = false;
+                serviceResponse.Message = "Both existing Customer Id and details of new customer are provided,please provide either an existing customer Id or the details of a new customer";
+                return serviceResponse;
+            }
 
-                if (order.Customer != null && order.Customer.Count > 0)  //check if there is any content in Customer list inside order
-                {
-                  var customerList= await _customerService.Create(order.Customer);   //if there is some content in list create a customer
-                  var LastCustomer=customerList.Data.LastOrDefault();
-                  order.customerId = LastCustomer.id;
-                } 
+            if (Order.Customer.id == null && (!Order.Customer.firstName.IsNullOrEmpty() ||
+                                              !Order.Customer.contactNumber.IsNullOrEmpty() ||
+                                              !Order.Customer.address
+                                                  .IsNullOrEmpty())) //only go inside if id is null
+            {
+                /*List<Contracts.Customer> customer = new List<Contracts.Customer>();
+                customer.Add(Order.Customer);*/
+                /*var customerList = await _customerService.Create(customer);   //if there is some content in list create a customer*/
+                var customerList = await _customerService.Create(Order.Customer);   //if there is some 
+                var LastCustomer = customerList.Data.LastOrDefault();
+                Order.Customer.id = LastCustomer.id;
+            }
 
-                if (order.customerId != null && order.Customer == null || order.Customer?.Count == 0)
+
+            if(Order.Customer.id > 0 && (Order.Customer.firstName.IsNullOrEmpty() || Order.Customer.contactNumber.IsNullOrEmpty() || Order.Customer.address.IsNullOrEmpty())) ////If neither an existing customer id nor details of a new customer are provided then an error is thrown
+            {
+                try
                 {
-                    try
-                    {
-                        var customerExists = await _customerService.RetrieveById((int)order.customerId);
-                        if (customerExists.Data==null || !customerExists.Data.id.HasValue)
-                        {
-                            serviceResponse.Success = false;
-                            serviceResponse.Message = "Customer does not exist";
-                            return serviceResponse;
-                            //throw new Exception("Customer does not exist");
-                        }
-                    }
-                    catch (Exception ex)
+                    var customerExists = await _customerService.RetrieveById((int)Order.Customer.id);
+                    if (customerExists.Data == null || !customerExists.Data.id.HasValue)
                     {
                         serviceResponse.Success = false;
-                        serviceResponse.Message = ex.Message;
+                        serviceResponse.Message = "Customer does not exist";
                         return serviceResponse;
+                        //throw new Exception("Customer does not exist");
                     }
                 }
+                catch (Exception ex)
+                {
+                    serviceResponse.Success = false;
+                    serviceResponse.Message = ex.Message;
+                    return serviceResponse;
+                }
+            }
+            foreach (var order in Order.OrderItems)
+            {
+
+
                 var productExists = await _productService.RetrieveById(order.productId);
                 if (productExists.Data == null || !productExists.Data.id.HasValue)
                 {
@@ -99,7 +118,7 @@ namespace InventoryManagement.Services
                     serviceResponse.Message = $"Only {productExists.Data.productQuantity} items in stocks";
                     return serviceResponse;
                 }
-                entityOrder.customerId = (int)order.customerId;
+                entityOrder.customerId = (int)Order.Customer.id;
                 entityOrder.orderDate = DateTime.UtcNow;
                 entityOrder.productId = order.productId;
                 entityOrder.quantity = order.quantity;
@@ -120,12 +139,15 @@ namespace InventoryManagement.Services
             await _context.SaveChangesAsync();
 
             var updatedList=await _context.Orders.ToListAsync(); //return Ok here if latest list is not required to be updated
-            var outputList = updatedList.Select(code => _mapper.Map<Contracts.OrderResponse>(code)).ToList();
-            serviceResponse.Data = outputList;
+            var item = updatedList.LastOrDefault();
+           // newList.Add(_mapper.Map<Contracts.OrderResponse>(item));
+            //  var outputList = updatedList.Select(code => _mapper.Map<Contracts.OrderResponse>(code)).ToList();
+            //  serviceResponse.Data = outputList;
+            serviceResponse.Data = _mapper.Map<Contracts.OrderResponse>(item);
             return serviceResponse;
         }
 
-        public async Task<ServiceResponse<OrderResponse>> Update(OrderRequest request)
+        public async Task<ServiceResponse<OrderResponse>> Update(OrderRequest UpdatedOrder)
         {
 
             var serviceResponse = new ServiceResponse<OrderResponse>();
@@ -133,39 +155,42 @@ namespace InventoryManagement.Services
             try
             {
 
-                var order = await _context.Orders.FirstOrDefaultAsync(x => x.id == request.id);
+                var order = await _context.Orders.FirstOrDefaultAsync(x => x.id == UpdatedOrder.id);
                 if (order is null)
                 {
                     serviceResponse.Success = false;
-                    serviceResponse.Message = $"Order with ID'{request.id}' not found.";
+                    serviceResponse.Message = $"Order with ID'{UpdatedOrder.id}' not found.";
                     return serviceResponse;
                     //throw new Exception($"Order with ID'{request.id}' not found.");
                 }
-                var customerExists = await _customerService.RetrieveById((int)request.customerId);
-                if (request.customerId == null || customerExists.Data == null || !customerExists.Data.id.HasValue) //fault scenario return if goes inside this
+                var customerExists = await _customerService.RetrieveById((int)UpdatedOrder.Customer.id);
+                if (UpdatedOrder.Customer.id == null || customerExists.Data == null || !customerExists.Data.id.HasValue) //fault scenario return if goes inside this
                 {
                     serviceResponse.Success = false;
                     serviceResponse.Message = "Customer Id Invalid";
                     return serviceResponse;
                 }
-                var productExists = await _productService.RetrieveById(request.productId);
-                if (productExists.Data == null || !productExists.Data.id.HasValue)
+
+                foreach (var updatedOrder in UpdatedOrder.OrderItems)
                 {
-                    serviceResponse.Success = false;
-                    serviceResponse.Message = "Product with given Id does not exist";
-                    return serviceResponse;
-                    //throw new Exception("Customer does not exist");
+                    var productExists = await _productService.RetrieveById(updatedOrder.productId);
+                    if (productExists.Data == null || !productExists.Data.id.HasValue)
+                    {
+                        serviceResponse.Success = false;
+                        serviceResponse.Message = "Product with given Id does not exist";
+                        return serviceResponse;
+                        //throw new Exception("Customer does not exist");
+                    }
+                    order.productId = updatedOrder.productId; //will  not work if we really send a list of orders to be updated we need a separate contract for Orders
+                    order.quantity = updatedOrder.quantity;//will  not work if we really send a list of orders, will get updated each time removing the data for of previous item in list , update needs to only allow one order to be updated for that we need a different kind of contract where orderItem is not a list
+                    order.total_price = ((productExists.Data.sellingPrice) * (order.quantity));
+                    order.customerId = (int)UpdatedOrder.Customer.id;
+                    order.orderDate = DateTime.UtcNow;
+                    //need to send datetime in response do not need it in request //create different contract for response
+
+                    order.transactionStatus = "Completed";
+                    await _context.SaveChangesAsync();
                 }
-
-                order.customerId = (int)request.customerId;
-                order.orderDate = DateTime.UtcNow;
-                order.productId = request.productId;
-                order.quantity = request.quantity;   //need to send datetime in response do not need it in request //create different contract for response
-                order.total_price = ((productExists.Data.sellingPrice) * (order.quantity));
-                order.transactionStatus = "Completed";
-
-                await _context.SaveChangesAsync();
-
                 serviceResponse.Data = _mapper.Map<Contracts.OrderResponse>(order);
             }
             catch(Exception ex)
@@ -197,7 +222,7 @@ namespace InventoryManagement.Services
                 await _context.SaveChangesAsync();
 
 
-                var updatedList = await _context.Orders.ToListAsync(); 
+                var updatedList = await _context.Orders.ToListAsync();
                 var outputList = updatedList.Select(code => _mapper.Map<Contracts.OrderResponse>(code)).ToList();
                 serviceResponse.Data = outputList;
 

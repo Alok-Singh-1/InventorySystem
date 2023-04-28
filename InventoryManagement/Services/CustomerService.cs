@@ -1,10 +1,6 @@
-﻿using System.Diagnostics.Contracts;
-using System.Linq.Expressions;
-using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using AutoMapper;
 
-using Customer=InventoryManagement.Contracts.Customer;
+using Customer = InventoryManagement.Contracts.Customer;
 
 namespace InventoryManagement.Services
 {
@@ -50,15 +46,17 @@ namespace InventoryManagement.Services
             serviceResponse.Data = _mapper.Map<Contracts.Customer>(customer);
             return serviceResponse;
         }
-        public async Task<ServiceResponse<List<Customer>>> Create(List<Customer> Items)
+        public async Task<ServiceResponse<List<Customer>>> Create(Customer Item)
         {
             var serviceResponse = new ServiceResponse<List<Customer>>();
             var dbCustomer = new List<EntityFrameworkCore.Customer>();
+
+            dbCustomer.Add(_mapper.Map<EntityFrameworkCore.Customer>(Item));
             
-            foreach (var item in Items.Select(code => _mapper.Map<EntityFrameworkCore.Customer>(code)))
+            /*foreach (var item in Items.Select(code => _mapper.Map<EntityFrameworkCore.Customer>(code))) //should be used if input parameter is List<Customer> type right now its just Customer
             {
                 dbCustomer.Add(item);
-            }
+            }*/
             _context.Customers.AddRange(dbCustomer);
             await _context.SaveChangesAsync();
 

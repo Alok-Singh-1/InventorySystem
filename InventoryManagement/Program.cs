@@ -45,7 +45,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAutoMapper((typeof(Program).Assembly));
+builder.Services.AddAutoMapper((typeof(Program).Assembly)); 
 builder.Services.AddScoped<ICustomerService,CustomerService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();

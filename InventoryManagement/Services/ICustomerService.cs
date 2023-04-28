@@ -10,7 +10,7 @@ namespace InventoryManagement.Services
 
         public  Task<ServiceResponse<Customer>> RetrieveById(int id);
 
-        public Task<ServiceResponse<List<Customer>>> Create(List<Customer> Items);
+        public Task<ServiceResponse<List<Customer>>> Create(Customer Item);
 
         public Task<ServiceResponse<Customer>> Update(Customer request);
 

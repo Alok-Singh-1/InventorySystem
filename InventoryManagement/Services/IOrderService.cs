@@ -10,7 +10,7 @@ namespace InventoryManagement.Services
 
         public  Task<ServiceResponse<OrderResponse>> RetrieveById(int id);
 
-        public Task<ServiceResponse<List<OrderResponse>>> Create(List<OrderRequest> Items);
+        public Task<ServiceResponse<OrderResponse>> Create(OrderRequest Items);
 
         public Task<ServiceResponse<OrderResponse>> Update(OrderRequest request);
 

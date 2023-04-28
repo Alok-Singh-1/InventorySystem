@@ -1,4 +1,5 @@
 ﻿using InventoryManagement.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderResponse = InventoryManagement.Contracts.OrderResponse;
 using OrderRequest= InventoryManagement.Contracts.OrderRequest;
@@ -24,9 +25,9 @@ namespace SomeAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ServiceResponse<List<OrderResponse>>>> Purchase(List<OrderRequest> Items)
+        public async Task<ActionResult<ServiceResponse<OrderResponse>>> Purchase(OrderRequest Item)
         {
-            var orders = await _orderservice.Create(Items);
+            var orders = await _orderservice.Create(Item);
             return Ok(orders);
         }
 
