@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using System.Diagnostics.Contracts;
+using System.Net;
 
 namespace InventoryManagement.Contracts
 {
@@ -6,13 +7,9 @@ namespace InventoryManagement.Contracts
     {
         public int? id { get; set; }
 
-        public int? customerId { get; set; }
+        public Customer Customer { get; set; }
 
-        public int productId { get; set; }
-
-        public int quantity { get; set; }
-
-        public List<Customer>? Customer { get; set; }
+        public List<OrderItem> OrderItems { get; set; }
 
     }
 }

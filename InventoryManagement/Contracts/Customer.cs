@@ -1,4 +1,5 @@
-﻿using InventoryManagement.Common;
+﻿using System.ComponentModel.DataAnnotations;
+using InventoryManagement.Common;
 
 namespace InventoryManagement.Contracts
 { 
@@ -11,9 +12,13 @@ namespace InventoryManagement.Contracts
 
         public string? address { get; set; } = string.Empty;
 
+        [RegularExpression(@"^(?:^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$|)$",
+            ErrorMessage = "Please enter a valid EmailId")]
         public string? email { get; set; } = string.Empty;
-
-        public string? contactNumber { get; set; } = string.Empty;
+       
+        [RegularExpression(@"^$|^[0-9]*$",
+            ErrorMessage = "Please enter a valid Number")]
+        public string? contactNumber { get; set; } = string.Empty; //
 
         /*
         public User? user { get; set; } //Navigation Property, If planning to use authentication for Customer use this,authentication might cause issues in crud using injections

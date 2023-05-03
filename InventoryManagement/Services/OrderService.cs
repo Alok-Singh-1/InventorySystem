@@ -28,7 +28,7 @@ namespace InventoryManagement.Services
 
         public async Task<ServiceResponse<OrderResponse>> RetrieveById(int id)
         {
-            var serviceResponse = new ServiceResponse<OrderResponse>();
+            var serviceResponse = new ServiceResponse<OrderResponse>(new OrderResponse());
             var order = await _context.Orders.FirstOrDefaultAsync(x => x.id == id);//            var api = _someApi.Find(x => x.id == id);
             if (order == null)
             {
@@ -40,11 +40,18 @@ namespace InventoryManagement.Services
             serviceResponse.Data = _mapper.Map<Contracts.OrderResponse>(order);
             return serviceResponse;
         }
-        public async Task<ServiceResponse<OrderResponse>> Create(OrderRequest Order)
+        public async Task<ServiceResponse<OrderItemResponse>> Create(OrderRequest Order)
         {
-            var serviceResponse = new ServiceResponse<OrderResponse>();
-            var entityOrder = new EntityFrameworkCore.Order();
+            var serviceResponse = new ServiceResponse<OrderItemResponse>(new OrderItemResponse());
             var listDbOrder = new List<EntityFrameworkCore.Order>();
+            var oldList = await _context.Orders.ToListAsync();
+            int lastIndex = 0;
+            if (!oldList.IsNullOrEmpty() || oldList.Count != 0)
+            {
+                var lastItem = oldList.Last();
+                lastIndex = oldList.FindIndex(a => a.id == lastItem.id);
+            }
+
 
             if (Order.Customer.id == null && (Order.Customer.firstName.IsNullOrEmpty() || Order.Customer.contactNumber.IsNullOrEmpty() || Order.Customer.address.IsNullOrEmpty())) ////If neither an existing customer id nor details of a new customer are provided then an error is thrown
             {
@@ -96,8 +103,7 @@ namespace InventoryManagement.Services
             }
             foreach (var order in Order.OrderItems)
             {
-
-
+                var entityOrder = new EntityFrameworkCore.Order();
                 var productExists = await _productService.RetrieveById(order.productId);
                 if (productExists.Data == null || !productExists.Data.id.HasValue)
                 {
@@ -127,7 +133,7 @@ namespace InventoryManagement.Services
                 listDbOrder.Add(entityOrder);
 
                 productExists.Data.productQuantity = (productExists.Data.productQuantity-(order.quantity));//update quantity in product table after order
-               await _productService.Update(productExists.Data);
+                await _productService.Update(productExists.Data);
             }
          //   var dbOrders = Orders.Select(code => _mapper.Map<EntityFrameworkCore.Order>(code)).ToList();
 
@@ -140,17 +146,47 @@ namespace InventoryManagement.Services
 
             var updatedList=await _context.Orders.ToListAsync(); //return Ok here if latest list is not required to be updated
             var item = updatedList.LastOrDefault();
-           // newList.Add(_mapper.Map<Contracts.OrderResponse>(item));
+            // newList.Add(_mapper.Map<Contracts.OrderResponse>(item));
             //  var outputList = updatedList.Select(code => _mapper.Map<Contracts.OrderResponse>(code)).ToList();
             //  serviceResponse.Data = outputList;
-            serviceResponse.Data = _mapper.Map<Contracts.OrderResponse>(item);
+            var customerI= await _customerService.RetrieveById(item.customerId);
+            if (customerI.Data == null || !customerI.Data.id.HasValue)
+            {
+                serviceResponse.Success = false;
+                serviceResponse.Message = "Customer does not exist";
+                return serviceResponse;
+                //throw new Exception("Customer does not exist");
+            }
+
+            // serviceResponse.Data.Customer = new Contracts.Customer();
+            serviceResponse.Data = new Contracts.OrderItemResponse();
+            serviceResponse.Data.OrderItems = new List<OrderResponseItem>();
+            serviceResponse.Data.Customer = customerI.Data;
+            for (var i = 0; i < updatedList.Count; i++)
+            {
+                OrderResponseItem singleOrder = new OrderResponseItem();
+                var pointer = (i + lastIndex+1);
+                if (pointer > (updatedList.Count - 1))
+                {
+                    break;
+                }
+                var dbItem = updatedList[pointer];
+                singleOrder.id = dbItem.id;
+                singleOrder.quantity=dbItem.quantity;
+                singleOrder.total_price = dbItem.total_price;
+                singleOrder.transactionStatus = dbItem.transactionStatus;
+                singleOrder.productId=dbItem.productId;
+                singleOrder.orderDate = dbItem.orderDate;
+                serviceResponse.Data.OrderItems.Add(singleOrder);
+            }
+        //  serviceResponse.Data.OrderItems = _mapper.Map<Contracts.OrderResponse>(item);
             return serviceResponse;
         }
 
         public async Task<ServiceResponse<OrderResponse>> Update(OrderRequest UpdatedOrder)
         {
 
-            var serviceResponse = new ServiceResponse<OrderResponse>();
+            var serviceResponse = new ServiceResponse<OrderResponse>(new OrderResponse());
 
             try
             {
@@ -204,7 +240,7 @@ namespace InventoryManagement.Services
 
         public async Task<ServiceResponse<List<OrderResponse>>> DeleteSpecific(int id)
         {
-            var serviceResponse = new ServiceResponse<List<OrderResponse>>();
+            var serviceResponse = new ServiceResponse<List<OrderResponse>>(new List<OrderResponse>());
 
             try
             {

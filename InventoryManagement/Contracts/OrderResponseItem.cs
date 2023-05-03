@@ -2,11 +2,9 @@
 
 namespace InventoryManagement.Contracts
 {
-    public class OrderResponse
+    public class OrderResponseItem
     {
         public int? id { get; set; }
-
-        public int customerId { get; set; }
 
         public int productId { get; set; }
 
@@ -18,7 +16,6 @@ namespace InventoryManagement.Contracts
 
         public DateTime? orderDate { get; set; }
 
-        public List<Customer>? ustomer { get; set; }
-
+      //  public Decimal? Discount { get; set; }
     }
 }

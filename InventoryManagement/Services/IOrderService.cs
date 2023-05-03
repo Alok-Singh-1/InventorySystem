@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using InventoryManagement.Contracts;
+using Microsoft.AspNetCore.Mvc;
 using OrderResponse = InventoryManagement.Contracts.OrderResponse;
 using OrderRequest = InventoryManagement.Contracts.OrderRequest;
 
@@ -10,7 +11,7 @@ namespace InventoryManagement.Services
 
         public  Task<ServiceResponse<OrderResponse>> RetrieveById(int id);
 
-        public Task<ServiceResponse<OrderResponse>> Create(OrderRequest Items);
+        public Task<ServiceResponse<OrderItemResponse>> Create(OrderRequest Items);
 
         public Task<ServiceResponse<OrderResponse>> Update(OrderRequest request);
 

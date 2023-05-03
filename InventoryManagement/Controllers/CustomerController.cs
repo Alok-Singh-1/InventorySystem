@@ -30,9 +30,9 @@ namespace SomeAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ServiceResponse<List<Customer>>>> Create(List<Customer> Items)
+        public async Task<ActionResult<ServiceResponse<List<Customer>>>> Create(Customer Item)
         {
-            var customers = await _customerService.Create(Items);
+            var customers = await _customerService.Create(Item);
             return Ok(customers);
         }
 

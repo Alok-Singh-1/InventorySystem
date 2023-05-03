@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-
+using Npgsql;
 using Customer = InventoryManagement.Contracts.Customer;
 
 namespace InventoryManagement.Services
@@ -15,7 +15,7 @@ namespace InventoryManagement.Services
         }
         public async Task<ServiceResponse<List<Customer>>> Retrieve()
         {
-            var serviceResponse = new ServiceResponse<List<Customer>>();
+            var serviceResponse = new ServiceResponse<List<Customer>>(new List<Customer>());
             var dbCustomers=await _context.Customers.ToListAsync();
 
 
@@ -40,7 +40,7 @@ namespace InventoryManagement.Services
 
         public async Task<ServiceResponse<Customer>> RetrieveById(int id)
         {
-            var serviceResponse = new ServiceResponse<Customer>();
+            var serviceResponse = new ServiceResponse<Customer>(new Customer());
             var customer = await _context.Customers.FirstOrDefaultAsync(x => x.id == id);//            var api = _someApi.Find(x => x.id == id);
             if (customer == null) throw new Exception("Customer id not valid"); //null doesn't work in this case
             serviceResponse.Data = _mapper.Map<Contracts.Customer>(customer);
@@ -48,7 +48,7 @@ namespace InventoryManagement.Services
         }
         public async Task<ServiceResponse<List<Customer>>> Create(Customer Item)
         {
-            var serviceResponse = new ServiceResponse<List<Customer>>();
+            var serviceResponse = new ServiceResponse<List<Customer>>(new List<Customer>());
             var dbCustomer = new List<EntityFrameworkCore.Customer>();
 
             dbCustomer.Add(_mapper.Map<EntityFrameworkCore.Customer>(Item));
@@ -58,7 +58,23 @@ namespace InventoryManagement.Services
                 dbCustomer.Add(item);
             }*/
             _context.Customers.AddRange(dbCustomer);
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+
+                bool uniqueViolation = ((Npgsql.PostgresException)ex.InnerException).Code=="23505";
+                bool isContactDuplicate=((Npgsql.PostgresException)ex.InnerException).ConstraintName.Contains("contactNumber");
+                if (uniqueViolation && isContactDuplicate)
+                {
+                    serviceResponse.Success = false;
+                    serviceResponse.Message = "Contact number already exists, please enter a new number";
+                    return serviceResponse;
+                }
+            }
 
             var updatedList=await _context.Customers.ToListAsync(); //return Ok here if latest list is not required to be updated
             var outputList = updatedList.Select(code => _mapper.Map<Contracts.Customer>(code)).ToList();
@@ -69,7 +85,7 @@ namespace InventoryManagement.Services
         public async Task<ServiceResponse<Customer>> Update(Customer request)
         {
 
-            var serviceResponse = new ServiceResponse<Customer>();
+            var serviceResponse = new ServiceResponse<Customer>(new Customer());
 
             try
             {
@@ -97,7 +113,7 @@ namespace InventoryManagement.Services
 
         public async Task<ServiceResponse<List<Customer>>> DeleteSpecific(int id)
         {
-            var serviceResponse = new ServiceResponse<List<Customer>>();
+            var serviceResponse = new ServiceResponse<List<Customer>>(new List<Customer>());
 
             try
             {

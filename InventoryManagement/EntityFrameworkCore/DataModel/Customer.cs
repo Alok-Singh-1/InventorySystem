@@ -1,5 +1,6 @@
 ﻿//using System.ComponentModel.DataAnnotations.Schema;
 
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using InventoryManagement.Common;
 
@@ -15,6 +16,8 @@ namespace InventoryManagement.EntityFrameworkCore
 
             public string address { get; set; } = string.Empty;
 
+            /*[RegularExpression(@"^(?:^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$|)$",
+                ErrorMessage = "EnterValidEmailAddress")]*/
             public string? email { get; set; } = string.Empty;
 
             public string contactNumber { get; set; } = string.Empty;
